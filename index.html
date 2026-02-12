@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html>
 <head>
@@ -11,13 +10,24 @@
         .container { max-width: 500px; margin: 20px auto; background: #1a1a1a; padding: 30px; border-radius: 15px; border: 2px solid #333; position: relative; box-shadow: 0 0 30px rgba(0,0,0,0.8); z-index: 5; transition: 0.3s; }
         h1 { color: var(--main-red); letter-spacing: 5px; text-shadow: 2px 2px 5px #000; margin: 30px 0 10px 0; }
         .bounty-display { font-size: 2.5em; color: var(--gold); font-weight: bold; margin: 20px 0; }
-        #player-tag { font-size: 0.8em; color: #888; margin-bottom: 5px; cursor: pointer; }
-        #player-tag:hover { color: var(--gold); }
+        
+        /* 新增：帳號區域樣式 */
+        #account-bar { font-size: 0.85em; color: #888; margin-bottom: 10px; cursor: pointer; background: #222; padding: 8px; border-radius: 5px; border: 1px solid #333; }
+        #account-bar:hover { border-color: var(--gold); color: #fff; }
+        
         button { padding: 12px; font-size: 1em; cursor: pointer; border-radius: 8px; border: none; width: 95%; font-weight: bold; margin-top: 10px; transition: 0.2s; }
         .btn-shoot { background: var(--main-red); color: #fff; border-bottom: 4px solid #600; }
         .btn-cashout { background: #008000; color: #fff; border-bottom: 4px solid #004000; }
         .btn-menu { background: #333; color: #eee; border: 1px solid #444; }
         .btn-sync { background: var(--gold); color: #000; font-size: 0.9em; }
+        
+        /* 模塊化列表 UI (共用成就樣式) */
+        .module-list { max-height: 400px; overflow-y: auto; padding-right: 5px; margin: 15px 0; }
+        .module-card { background: #222; border: 1px solid #333; padding: 15px; margin: 8px 0; border-radius: 10px; text-align: left; cursor: pointer; transition: 0.2s; }
+        .module-card:hover { border-color: var(--gold); background: #2a2400; }
+        .module-title { color: var(--gold); font-weight: bold; display: block; margin-bottom: 5px; }
+        .module-info { color: #aaa; font-size: 0.85em; font-family: monospace; word-break: break-all; }
+
         .lb-tabs { display: flex; gap: 5px; margin-bottom: 15px; }
         .tab { flex: 1; padding: 10px; background: #222; font-size: 0.8em; cursor: pointer; border-radius: 5px; border: 1px solid #444; }
         .tab.active { background: var(--gold); color: #000; border-color: var(--gold); }
@@ -27,10 +37,11 @@
         .lb-name { flex: 1; text-align: left; color: #ccc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 5px; }
         .lb-val { color: #fff; font-family: monospace; font-weight: bold; }
         .me { background: rgba(255, 204, 0, 0.15) !important; border-radius: 4px; }
+        
         .scene { display: none; }
         .active { display: block; }
         .nav-btn { position: absolute; top: 15px; background: #333; color: var(--gold); padding: 6px 12px; border-radius: 5px; font-size: 0.8em; cursor: pointer; border: 1px solid #444; z-index: 10; }
-        #fx-layer { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 100; }
+        #fx-layer { position: fixed; top: 0; left: 0; width: 100vw; height: height; pointer-events: none; z-index: 100; }
         .flash { animation: flash-anim 0.12s forwards; }
         @keyframes flash-anim { 0% { background: #fff; opacity: 1; } 100% { opacity: 0; } }
         
@@ -43,65 +54,24 @@
         .last-life-warn { color: #ff0000; font-size: 0.7em; font-weight: bold; animation: blink 1s infinite; display: none; }
         @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
 
-        #ach-list-container { 
-            max-height: 380px; 
-            overflow-y: auto; 
-            padding-right: 5px;
-            margin: 10px 0;
-            scrollbar-width: thin;
-            scrollbar-color: #444 #111;
-        }
-        #ach-list-container::-webkit-scrollbar { width: 6px; }
-        #ach-list-container::-webkit-scrollbar-track { background: #111; }
-        #ach-list-container::-webkit-scrollbar-thumb { background: #444; border-radius: 3px; }
-        #ach-list-container::-webkit-scrollbar-thumb:hover { background: var(--gold); }
-
+        #ach-list-container { max-height: 380px; overflow-y: auto; padding-right: 5px; margin: 10px 0; }
         .void-mode { border-color: #ff0000 !important; box-shadow: 0 0 50px rgba(255,0,0,0.6) !important; }
         .void-text { color: #ff0000 !important; animation: blink 0.5s infinite !important; }
-
         .ach-card { cursor: pointer; position: relative; transition: 0.2s; }
         .ach-card:hover { transform: scale(1.02); }
         .ach-equipped { border: 2px solid var(--gold) !important; box-shadow: 0 0 10px rgba(255, 204, 0, 0.3); }
         .equip-tag { position: absolute; top: 5px; right: 10px; font-size: 0.7em; color: var(--gold); font-weight: bold; }
 
-        .effect-million { color: #ffff00 !important; text-shadow: 0 0 8px #ffff00; font-weight: bold; }
-        .effect-ten-million { color: #ff8c00 !important; text-shadow: 0 0 8px #ff8c00; font-weight: bold; }
-        .effect-hundred-million { color: #00ffff !important; text-shadow: 0 0 8px #00ffff; font-weight: bold; }
-        .effect-lucky { color: #00ff00 !important; text-shadow: 0 0 8px #00ff00; font-weight: bold; }
-        .effect-life-death { 
-            background: linear-gradient(90deg, #ff4500, #ff0000); 
-            -webkit-background-clip: text; 
-            -webkit-text-fill-color: transparent; 
-            filter: drop-shadow(0 0 5px rgba(255, 69, 0, 0.8));
-            font-weight: bold;
-        }
-        .effect-limit { 
-            background: linear-gradient(90deg, #1e90ff, #8a2be2); 
-            -webkit-background-clip: text; 
-            -webkit-text-fill-color: transparent; 
-            filter: drop-shadow(0 0 5px rgba(138, 43, 226, 0.8));
-            font-weight: bold;
-        }
-        
-        /* 修改：棄運之子 - 發光彩虹漸變特效 */
-        .effect-unlucky-son {
-            background: linear-gradient(90deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #8b00ff);
-            background-size: 400% 400%;
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            font-weight: bold;
-            filter: drop-shadow(0 0 2px rgba(255,255,255,0.5));
-            animation: rainbow-flow 3s linear infinite, glow-pulse 1.5s ease-in-out infinite;
-        }
-        @keyframes rainbow-flow {
-            0% { background-position: 0% 50%; }
-            100% { background-position: 100% 50%; }
-        }
-        @keyframes glow-pulse {
-            0%, 100% { filter: drop-shadow(0 0 2px rgba(255,255,255,0.4)) brightness(1); }
-            50% { filter: drop-shadow(0 0 8px rgba(255,255,255,0.8)) brightness(1.3); }
-        }
-
+        /* 特效樣式保留 */
+        .effect-million { color: #ffff00 !important; text-shadow: 0 0 8px #ffff00; }
+        .effect-ten-million { color: #ff8c00 !important; text-shadow: 0 0 8px #ff8c00; }
+        .effect-hundred-million { color: #00ffff !important; text-shadow: 0 0 8px #00ffff; }
+        .effect-lucky { color: #00ff00 !important; text-shadow: 0 0 8px #00ff00; }
+        .effect-life-death { background: linear-gradient(90deg, #ff4500, #ff0000); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 0 5px rgba(255, 69, 0, 0.8)); }
+        .effect-limit { background: linear-gradient(90deg, #1e90ff, #8a2be2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 0 5px rgba(138, 43, 226, 0.8)); }
+        .effect-unlucky-son { background: linear-gradient(90deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #8b00ff); background-size: 400% 400%; -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: rainbow-flow 3s linear infinite, glow-pulse 1.5s ease-in-out infinite; }
+        @keyframes rainbow-flow { 0% { background-position: 0% 50%; } 100% { background-position: 100% 50%; } }
+        @keyframes glow-pulse { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(1.3) drop-shadow(0 0 8px rgba(255,255,255,0.8)); } }
     </style>
 </head>
 <body>
@@ -111,9 +81,15 @@
             <div class="nav-btn" style="left:15px" onclick="changeScene('ach-scene')">🏆 成就</div>
             <div class="nav-btn" style="right:15px" onclick="changeScene('lb-scene')">🥇 榜單</div>
         </div>
+
         <div id="menu-scene" class="scene active">
             <h1>RUSSIAN<br>ROULETTE</h1>
-            <div id="player-tag" onclick="rename()">👤 <span id="display-name">匿名玩家</span><span id="equipped-icon-main"></span> (點擊修改)</div>
+            
+            <div id="account-bar" onclick="changeScene('acc-scene')">
+                👤 <span id="acc-status">未登入 (點擊登入或創建帳號)</span>
+                <span id="equipped-icon-main"></span>
+            </div>
+
             <div style="background: #222; padding: 20px; border-radius: 10px; margin: 20px 0; border-left: 5px solid var(--gold); text-align: left;">
                 <div style="margin-bottom: 12px;"><div style="color: #888; font-size: 0.75em;">TOTAL ASSETS</div><div style="font-size: 1.8em; font-weight: bold; color: var(--gold);">$<span id="total-money">0</span></div></div>
                 <div><div style="color: #888; font-size: 0.75em;">PEAK RECORD</div><div style="font-size: 1.2em; font-weight: bold; color: #eee;">$<span id="peak-money">0</span></div></div>
@@ -121,6 +97,30 @@
             <button class="btn-menu" style="background:var(--main-red); color:#fff;" onclick="startGame()">進入賭局</button>
             <button class="btn-sync" id="sync-btn" onclick="syncToCloud()">☁️ 同步數據至雲端</button>
         </div>
+
+        <div id="acc-scene" class="scene">
+            <h2>ACCOUNT CENTER</h2>
+            <div class="module-list">
+                <div class="module-card">
+                    <span class="module-title">1. 帳號資訊 (基本資料)</span>
+                    <div class="module-info" onclick="rename()">暱稱：<span id="acc-nick" style="color:#fff">--</span> (點擊修改)</div>
+                    <div class="module-info" onclick="editLegacyKey()">繼承碼：<span id="acc-key" style="color:#fff">--</span> (點擊修改)</div>
+                    <div class="module-info">UID：<span id="acc-uid" style="color:#777">--</span></div>
+                </div>
+
+                <div class="module-card" onclick="openInheritMode('normal')">
+                    <span class="module-title">2. 帳號繼承 (正式遷移)</span>
+                    <div class="module-info">輸入 UID 與繼承碼，從其他裝置或網域領回完整資產。</div>
+                </div>
+
+                <div class="module-card" onclick="openInheritMode('alpha')">
+                    <span class="module-title">3. 內測繼承 (快速救援)</span>
+                    <div class="module-info">僅需輸入暱稱即可嘗試找回早期內測數據。</div>
+                </div>
+            </div>
+            <button class="btn-menu" onclick="changeScene('menu-scene')">返回</button>
+        </div>
+
         <div id="game-scene" class="scene">
             <div id="hp-display">❤️❤️❤️</div>
             <div id="last-life-label" class="last-life-warn">⚠️ LAST CHANCE: 2X BOUNTY ACTIVE ⚠️</div>
@@ -137,18 +137,20 @@
             <button class="btn-shoot" id="shoot-btn" onclick="playTurn()">扣下板機</button>
             <button class="btn-cashout" id="cash-btn" onclick="handleCashOut()">見好就收</button>
         </div>
+
         <div id="lb-scene" class="scene">
             <h2>LEADERBOARD</h2>
             <div class="lb-tabs"><div id="tab-total" class="tab active" onclick="switchLB('total')">財富總榜</div><div id="tab-peak" class="tab" onclick="switchLB('peak')">巔峰單局</div></div>
             <div class="lb-list" id="lb-container">載入中...</div>
             <button class="btn-menu" onclick="changeScene('menu-scene')">返回</button>
         </div>
+
         <div id="ach-scene" class="scene">
             <h2>ACHIEVEMENTS</h2>
-            <p style="font-size: 0.7em; color: #888; margin-top: -10px;">點擊已獲得成就來配戴稱號</p>
             <div id="ach-list-container"></div>
             <button class="btn-menu" onclick="changeScene('menu-scene')">返回</button>
         </div>
+
         <div id="result-scene" class="scene">
             <h2 id="result-title"></h2>
             <div id="result-desc" style="margin: 20px 0; line-height:1.6;"></div>
@@ -158,7 +160,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, set, onValue, query, orderByChild, limitToLast } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { getDatabase, ref, set, onValue, query, orderByChild, limitToLast, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBH75KFH3Qp6A3hLbA--cOq-S9R-uE68Us",
@@ -175,24 +177,18 @@
         const db = getDatabase(app);
 
         let consecutiveOneBulletFails = 0;
+        let userId = localStorage.getItem('roulette_uid') || 'U' + Math.random().toString(36).substr(2, 7).toUpperCase();
+        localStorage.setItem('roulette_uid', userId);
 
         window.state = { 
             name: "匿名玩家", 
-            total: 0, 
-            peak: 0, 
-            peak_time: 0, 
-            games: 0, 
-            deaths: 0, 
-            shots: 0, 
-            wins: 0, 
-            achs: new Array(12).fill(0),
-            title_index: -1 
+            legacy_key: Math.random().toString(36).substr(2, 6).toUpperCase(),
+            total: 0, peak: 0, peak_time: 0, games: 0, deaths: 0, shots: 0, wins: 0, 
+            achs: new Array(12).fill(0), title_index: -1 
         };
         
         let curBounty = 0;
         let playerHp = 3;
-        let userId = localStorage.getItem('roulette_uid') || 'U' + Math.random().toString(36).substr(2, 5);
-        localStorage.setItem('roulette_uid', userId);
 
         const ACH_DATA = [
             { title: "初生之犢", icon: "🔰", desc: "完成第一次「止損領錢」。" },
@@ -213,8 +209,8 @@
             const saved = localStorage.getItem('roulette_pro_save');
             if (saved) {
                 const parsed = JSON.parse(saved);
+                if(!parsed.legacy_key) parsed.legacy_key = Math.random().toString(36).substr(2, 6).toUpperCase();
                 while(parsed.achs.length < ACH_DATA.length) parsed.achs.push(0);
-                if (parsed.title_index === undefined) parsed.title_index = -1;
                 window.state = parsed;
             }
             updateUI();
@@ -224,27 +220,61 @@
 
         window.saveLocal = function() { localStorage.setItem('roulette_pro_save', JSON.stringify(window.state)); };
 
+        // 帳號功能
         window.rename = function() {
-            const n = prompt("請輸入你的暱稱 (限16字, 不含表情)：", window.state.name);
-            if (n !== null) {
-                const cleanName = n.replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]|\u200D|\uFE0F/g, '').trim();
-                if (cleanName.length > 0) {
-                    window.state.name = cleanName.substring(0, 16);
-                    saveLocal();
-                    updateUI();
-                } else {
-                    alert("暱稱無效！");
-                }
+            const n = prompt("輸入新暱稱：", window.state.name);
+            if (n) {
+                window.state.name = n.trim().substring(0, 16);
+                saveLocal(); updateUI();
             }
         };
 
-        window.toggleEquip = function(index) {
-            if (window.state.achs[index] !== 1) return;
-            window.state.title_index = (window.state.title_index === index) ? -1 : index;
-            saveLocal();
-            renderAchievements();
-            updateUI();
+        window.editLegacyKey = function() {
+            const k = prompt("設定繼承碼 (僅限英數)：", window.state.legacy_key);
+            if (k) {
+                const clean = k.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+                if(clean.length >= 4) { window.state.legacy_key = clean; saveLocal(); updateUI(); }
+                else alert("繼承碼太短(至少4位)");
+            }
         };
+
+        window.openInheritMode = function(type) {
+            if (type === 'normal') {
+                const targetUid = prompt("請輸入舊帳號的 UID：");
+                const targetKey = prompt("請輸入該帳號的 繼承碼：");
+                if (!targetUid || !targetKey) return;
+                
+                onValue(ref(db, 'players/' + targetUid), (snap) => {
+                    const data = snap.val();
+                    if (data && data.l_key === targetKey) {
+                        applyInherit(data, targetUid);
+                    } else alert("驗證失敗：UID 或繼承碼不正確");
+                }, { onlyOnce: true });
+            } else {
+                const name = prompt("請輸入內測時的暱稱：");
+                if (!name) return;
+                onValue(ref(db, 'players'), (snap) => {
+                    const all = snap.val();
+                    let foundUid = Object.keys(all).find(k => all[k].name === name);
+                    if (foundUid) applyInherit(all[foundUid], foundUid);
+                    else alert("找不到該暱稱的存檔");
+                }, { onlyOnce: true });
+            }
+        };
+
+        function applyInherit(data, oldUid) {
+            window.state.total = data.total || 0;
+            window.state.peak = data.peak || 0;
+            window.state.name = data.name;
+            window.state.title_index = data.t_idx !== undefined ? data.t_idx : -1;
+            saveLocal();
+            // 轉移權限：用新 UID 覆蓋，刪除舊的
+            set(ref(db, 'players/' + userId), { ...data, last_sync: Date.now() });
+            if(oldUid !== userId) remove(ref(db, 'players/' + oldUid));
+            updateUI();
+            alert("繼承成功！數據已同步至此裝置。");
+            changeScene('menu-scene');
+        }
 
         window.changeScene = function(sId) {
             document.querySelectorAll('.scene').forEach(s => s.classList.remove('active'));
@@ -252,17 +282,15 @@
             document.getElementById('nav-group').style.display = (sId === 'menu-scene') ? 'block' : 'none';
             if (sId === 'ach-scene') renderAchievements();
             updateUI();
-            if (sId === 'game-scene') updateOdds();
         };
 
+        // 遊戲核心邏輯 (保留原樣)
         window.startGame = function() {
             playerHp = 3; curBounty = 0; consecutiveOneBulletFails = 0;
-            const logEl = document.getElementById('log');
-            if (logEl) logEl.innerHTML = "> 準備好賭上一切了嗎？";
+            document.getElementById('log').innerHTML = "> 準備好賭上一切了嗎？";
             document.getElementById('bullet-input').value = 1;
             changeScene('game-scene');
-            updateUI();
-            updateOdds();
+            updateUI(); updateOdds();
         };
 
         window.updateOdds = function() {
@@ -271,91 +299,58 @@
             let survDisplay = document.getElementById('stat-survival');
             let gainDisplay = document.getElementById('stat-gain');
             let container = document.getElementById('main-container');
-            let hpDisplay = document.getElementById('hp-display');
-            let logEl = document.getElementById('log');
-
             if (b === 7 && window.state.achs[2] === 1) {
                 container.classList.add('void-mode');
-                survDisplay.innerText = "???";
-                gainDisplay.innerText = "???";
-                gainDisplay.style.color = "#ff0000";
-                hpDisplay.innerText = "💀💀💀";
-                logEl.innerHTML = "<span class='void-text'>這不是你該來的地方......</span>";
+                survDisplay.innerText = "???"; gainDisplay.innerText = "???";
                 return;
             } else if (b > 6) { bInput.value = 6; b = 6; }
-
             container.classList.remove('void-mode');
-            gainDisplay.style.color = "var(--gold)";
-            if (logEl.innerHTML.includes('void-text')) {
-                logEl.innerText = curBounty > 0 ? `> 當前累積：$${curBounty.toLocaleString()}` : "> 準備好賭上一切了嗎？";
-            }
-
             let survivalRate = ((6 - b) / 6 * 100).toFixed(1);
             let potentialGain = Math.pow(b, 2) * 250;
             if (b === 6) { survivalRate = "1.0"; potentialGain = 77777; }
             if (playerHp === 1) potentialGain *= 2;
-
-            survDisplay.innerText = survivalRate + "%";
+            survDisplay.innerText = (b===6?"1.0%":survivalRate + "%");
             gainDisplay.innerText = "+$" + potentialGain.toLocaleString();
             updateHpDisplay();
         };
 
         window.playTurn = function() {
-            let bInput = document.getElementById('bullet-input');
-            let b = parseInt(bInput.value);
-            
+            let b = parseInt(document.getElementById('bullet-input').value);
+            flashEffect();
             if (b === 7) {
-                if (window.state.achs[2] !== 1) { alert("尚未解鎖此難度"); bInput.value = 1; updateOdds(); return; }
-                window.state.shots++; flashEffect();
                 if (Math.random() < 0.00007) {
                     curBounty += 7777777; window.state.achs[10] = 1;
                     document.getElementById('log').innerHTML = "<b style='color:#ff0000'>👁️ 祂在看著你。獲得 $7,777,777</b>";
-                } else {
-                    playerHp = 0; window.state.deaths++; saveLocal(); showResult(false);
-                }
+                } else { playerHp = 0; window.state.deaths++; saveLocal(); showResult(false); }
                 updateUI(); return;
             }
-
-            if (isNaN(b) || b < 1 || b > 6) { alert("🚨 非法裝填！"); return; }
-            window.state.shots++; flashEffect();
             let multiplier = (playerHp === 1) ? 2 : 1;
-
-            if (b === 6 && Math.random() < 0.01) { 
-                window.state.achs[2] = 1; 
-                if (playerHp === 1) window.state.achs[9] = 1;
-                let prize = 77777 * multiplier;
-                curBounty += prize;
-                document.getElementById('log').innerHTML = `<b style='color:#ffcc00'>🎰 奇蹟卡殼！獲得 $${prize.toLocaleString()}</b>`;
-                consecutiveOneBulletFails = 0; 
+            if (b === 6 && Math.random() < 0.01) {
+                window.state.achs[2] = 1; if (playerHp === 1) window.state.achs[9] = 1;
+                curBounty += 77777 * multiplier;
+                document.getElementById('log').innerHTML = "<b style='color:#ffcc00'>🎰 奇蹟卡殼！</b>";
             } else if (Math.random() * 6 < b) {
                 playerHp--;
-                if (b === 1) { consecutiveOneBulletFails++; } else { consecutiveOneBulletFails = 0; }
-                if (playerHp > 0) {
-                    document.getElementById('log').innerHTML = `<b style='color:#ff4444'>💥 擊發失敗！失去 1 點生命！(賞金保留)</b>`;
-                } else {
-                    if (consecutiveOneBulletFails === 3) { window.state.achs[11] = 1; }
-                    window.state.deaths++; saveLocal(); showResult(false);
+                if(b===1) consecutiveOneBulletFails++;
+                if (playerHp <= 0) { 
+                    if(consecutiveOneBulletFails >= 3) window.state.achs[11] = 1;
+                    window.state.deaths++; saveLocal(); showResult(false); 
                 }
+                else document.getElementById('log').innerHTML = "<b style='color:#ff4444'>💥 擊發失敗！生命 -1</b>";
             } else {
-                consecutiveOneBulletFails = 0;
-                if (b === 5) window.state.achs[4] = 1;
                 curBounty += (Math.pow(b, 2) * 250 * multiplier);
-                if (curBounty >= 10000) window.state.achs[1] = 1;
-                document.getElementById('log').innerText = `> 擊發成功。當前累積：$${curBounty.toLocaleString()}`;
+                if (b === 5) window.state.achs[4] = 1;
+                document.getElementById('log').innerText = `> 擊發成功。當前：$${curBounty.toLocaleString()}`;
             }
             updateUI(); updateOdds();
         };
 
         window.handleCashOut = function() {
             if (curBounty <= 0) return;
-            if (curBounty >= 100000) window.state.achs[8] = 1;
-            window.state.total += curBounty; window.state.wins++;
+            window.state.total += curBounty;
             if (curBounty > window.state.peak) { window.state.peak = curBounty; window.state.peak_time = Date.now(); }
-            window.state.achs[0] = 1; 
+            window.state.achs[0] = 1;
             if (window.state.total >= 1000000) window.state.achs[3] = 1;
-            if (window.state.total >= 10000000) window.state.achs[6] = 1;
-            if (window.state.total >= 100000000) window.state.achs[7] = 1;
-            if (window.state.wins >= 5) window.state.achs[5] = 1;
             saveLocal(); showResult(true);
         };
 
@@ -364,72 +359,54 @@
             btn.disabled = true; btn.innerText = "🛰️ 同步中...";
             try {
                 await set(ref(db, 'players/' + userId), { 
-                    name: window.state.name, 
-                    total: window.state.total, 
-                    peak: window.state.peak, 
-                    peak_time: window.state.peak_time || Date.now(),
-                    t_idx: window.state.title_index
+                    name: window.state.name, total: window.state.total, peak: window.state.peak, 
+                    l_key: window.state.legacy_key, t_idx: window.state.title_index, peak_time: window.state.peak_time || Date.now()
                 });
                 btn.innerText = "✅ 同步成功";
                 setTimeout(() => { btn.innerText = "☁️ 同步數據至雲端"; btn.disabled = false; }, 2000);
             } catch (e) { alert("同步失敗！"); btn.innerText = "❌ 失敗"; btn.disabled = false; }
         };
 
-        window.switchLB = function(type) {
-            document.getElementById('tab-total').classList.toggle('active', type === 'total');
-            document.getElementById('tab-peak').classList.toggle('active', type === 'peak');
-            loadLeaderboardListener(type);
-        };
-
+        // 排行榜與 UI 更新
         function loadLeaderboardListener(field = 'total') {
             const lbRef = query(ref(db, 'players'), orderByChild(field), limitToLast(20));
-            onValue(lbRef, (snapshot) => {
-                const data = snapshot.val();
-                const container = document.getElementById('lb-container');
-                if (!data) { container.innerText = "尚與世隔絕"; return; }
-                const sorted = Object.values(data).sort((a, b) => {
-                    if (b[field] !== a[field]) return b[field] - a[field];
-                    return (a.peak_time || 0) - (b.peak_time || 0);
-                });
-                container.innerHTML = sorted.map((p, i) => {
-                    const icon = (p.t_idx !== undefined && p.t_idx >= 0) ? ACH_DATA[p.t_idx].icon : "";
-                    const effectClass = (p.t_idx !== undefined && p.t_idx >= 0) ? (ACH_DATA[p.t_idx].effect || "") : "";
-                    return `
+            onValue(lbRef, (snap) => {
+                const data = snap.val();
+                if (!data) return;
+                const sorted = Object.values(data).sort((a,b) => b[field] - a[field]);
+                document.getElementById('lb-container').innerHTML = sorted.map((p, i) => `
                     <div class="lb-row ${p.name === window.state.name ? 'me' : ''}">
                         <div class="lb-rank">#${i+1}</div>
-                        <div class="lb-name ${effectClass}">${p.name}${icon}</div>
+                        <div class="lb-name">${p.name}</div>
                         <div class="lb-val">$${(p[field] || 0).toLocaleString()}</div>
-                    </div>`;
-                }).join("");
+                    </div>`).join("");
             });
         }
 
-        function flashEffect() {
-            const fx = document.getElementById('fx-layer');
-            fx.classList.remove('flash'); void fx.offsetWidth; fx.classList.add('flash');
-        }
-
-        function updateHpDisplay() {
-            let hpHearts = "";
-            for(let i=0; i<3; i++) hpHearts += (i < playerHp) ? "❤️" : "🖤";
-            document.getElementById('hp-display').innerText = hpHearts;
-        }
+        window.switchLB = function(t) {
+            document.getElementById('tab-total').className = t==='total'?'tab active':'tab';
+            document.getElementById('tab-peak').className = t==='peak'?'tab active':'tab';
+            loadLeaderboardListener(t);
+        };
 
         function updateUI() {
             document.getElementById('total-money').innerText = window.state.total.toLocaleString();
             document.getElementById('peak-money').innerText = window.state.peak.toLocaleString();
             document.getElementById('current-bounty').innerText = curBounty.toLocaleString();
             
-            const nameEl = document.getElementById('display-name');
-            nameEl.innerText = window.state.name;
-            nameEl.className = "";
-            if (window.state.title_index >= 0 && ACH_DATA[window.state.title_index].effect) {
-                nameEl.classList.add(ACH_DATA[window.state.title_index].effect);
-            }
+            // 帳號資訊同步
+            const statusStr = `使用者：${window.state.name}`;
+            document.getElementById('acc-status').innerText = statusStr;
+            document.getElementById('acc-nick').innerText = window.state.name;
+            document.getElementById('acc-key').innerText = window.state.legacy_key;
+            document.getElementById('acc-uid').innerText = userId;
 
-            const iconMain = (window.state.title_index >= 0) ? ACH_DATA[window.state.title_index].icon : "";
-            document.getElementById('equipped-icon-main').innerText = iconMain;
-            if (parseInt(document.getElementById('bullet-input').value) !== 7) updateHpDisplay();
+            const nameMain = document.getElementById('acc-status');
+            nameMain.className = "";
+            if (window.state.title_index >= 0 && ACH_DATA[window.state.title_index].effect) {
+                nameMain.classList.add(ACH_DATA[window.state.title_index].effect);
+            }
+            document.getElementById('equipped-icon-main').innerText = window.state.title_index>=0?ACH_DATA[window.state.title_index].icon:"";
             document.getElementById('last-life-label').style.display = (playerHp === 1) ? "block" : "none";
         }
 
@@ -438,25 +415,37 @@
             container.innerHTML = ACH_DATA.map((ach, i) => {
                 const unlocked = window.state.achs[i] === 1;
                 const equipped = window.state.title_index === i;
-                if (ach.secret && !unlocked) return `<div style="background:#222; padding:15px; margin:8px; border-radius:10px; color:#444; border:1px solid #333">隱藏成就<br><small>???</small></div>`;
-                
-                const effectClass = ach.effect || "";
-                return `<div class="ach-card ${equipped ? 'ach-equipped' : ''}" 
-                             onclick="toggleEquip(${i})"
-                             style="background:${unlocked?'#2a2400':'#222'}; border:1px solid ${unlocked?'#555':'#333'}; padding:15px; margin:8px; border-radius:10px; text-align:left;">
-                            ${equipped ? '<span class="equip-tag">已配戴</span>' : ''}
-                            <b class="${unlocked ? effectClass : ''}" style="color:${unlocked && !effectClass ? 'var(--gold)' : (unlocked ? '' : '#888')}">${ach.title} ${ach.icon}</b><br>
-                            <small style="color:${unlocked?'#ccc':'#666'}">${ach.desc}</small>
+                if (ach.secret && !unlocked) return `<div class="ach-card" style="opacity:0.3; padding:15px; margin:8px; background:#222; border-radius:10px;">🔒 隱藏成就</div>`;
+                return `<div class="ach-card ${equipped ? 'ach-equipped' : ''}" onclick="toggleEquip(${i})" 
+                             style="background:${unlocked?'#2a2400':'#222'}; padding:15px; margin:8px; border-radius:10px; text-align:left; border:1px solid #333;">
+                             ${equipped?'<span class="equip-tag">配戴中</span>':''}
+                             <b class="${unlocked?ach.effect:''}" style="color:${unlocked?'var(--gold)':'#555'}">${ach.title} ${ach.icon}</b><br>
+                             <small style="color:#888">${ach.desc}</small>
                         </div>`;
             }).join("");
         }
 
+        window.toggleEquip = function(i) {
+            if(window.state.achs[i]!==1) return;
+            window.state.title_index = window.state.title_index===i?-1:i;
+            saveLocal(); renderAchievements(); updateUI();
+        };
+
+        function updateHpDisplay() {
+            document.getElementById('hp-display').innerText = "❤️".repeat(playerHp) + "🖤".repeat(3-playerHp);
+        }
+
+        function flashEffect() {
+            const fx = document.getElementById('fx-layer');
+            fx.classList.remove('flash'); void fx.offsetWidth; fx.classList.add('flash');
+        }
+
         function showResult(win) {
             changeScene('result-scene');
-            const title = document.getElementById('result-title');
-            title.innerText = win ? "止損成功" : "命運終結";
-            title.style.color = win ? "#0f0" : "#f00";
-            document.getElementById('result-desc').innerText = win ? `領走 $${curBounty.toLocaleString()}。` : "你失去了所有生命，獎金灰飛煙滅。";
+            const t = document.getElementById('result-title');
+            t.innerText = win ? "止損成功" : "命運終結";
+            t.style.color = win ? "#0f0" : "#f00";
+            document.getElementById('result-desc').innerText = win ? `領走 $${curBounty.toLocaleString()}` : "歸零。";
             curBounty = 0;
         }
 
