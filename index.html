@@ -129,7 +129,7 @@
             </div>
             <div id="log">> 準備好賭上一切了嗎？</div>
             <div style="margin: 20px 0;">
-                <span style="font-size:0.8em; color:#888;">裝填子彈 (1-7):</span><br>
+                <span style="font-size:0.8em; color:#888;">裝填子彈 (1-6):</span><br>
                 <input type="text" id="bullet-input" value="1" oninput="updateOdds()" style="background:#000; color:#fff; border:1px solid #ff4444; padding:10px; width:60px; text-align:center; border-radius:5px; font-size:1.2em; margin-top:5px;">
             </div>
             <button class="btn-shoot" id="shoot-btn" onclick="playTurn()">扣下板機</button>
@@ -284,8 +284,6 @@
             let bInput = document.getElementById('bullet-input');
             let rawVal = bInput.value;
             
-            // 手機端優化：oninput 期間不再強制修正非法值，避免無法刪除數字
-            // 只在計算顯示機率時解析數值
             let b = parseInt(rawVal);
             if (isNaN(b)) b = 0; 
 
@@ -322,9 +320,11 @@
             let bInput = document.getElementById('bullet-input');
             let b = parseInt(bInput.value);
 
-            // 開槍前一刻判定非法裝填
-            if (isNaN(b) || b < 1 || b > 7) {
-                alert("無效的裝填量！請輸入 1-7 之間的數字。");
+            // 如果輸入 7 但沒有解鎖強運，或者輸入大於 7 或小於 1，判定為非法
+            // 提示始終只顯示 1-6
+            let isSevenAllowed = (b === 7 && window.state.achs[2] === 1);
+            if (isNaN(b) || b < 1 || (b > 6 && !isSevenAllowed)) {
+                alert("無效的裝填量！請輸入 1-6 之間的數字。");
                 bInput.value = 1;
                 updateOdds();
                 return;
@@ -379,7 +379,6 @@
         window.handleCashOut = function() {
             if (curBounty <= 0) return;
             
-            // 修正：滿載而歸獲取條件 - 收手時單次獲得10萬或以上
             if (curBounty >= 100000) window.state.achs[8] = 1; 
             if (curBounty >= 10000) window.state.achs[1] = 1; // 賭徒本色
 
