@@ -11,7 +11,6 @@
         h1 { color: var(--main-red); letter-spacing: 5px; text-shadow: 2px 2px 5px #000; margin: 30px 0 10px 0; }
         .bounty-display { font-size: 2.5em; color: var(--gold); font-weight: bold; margin: 20px 0; }
         
-        /* 新增：帳號區域樣式 */
         #account-bar { font-size: 0.85em; color: #888; margin-bottom: 10px; cursor: pointer; background: #222; padding: 8px; border-radius: 5px; border: 1px solid #333; }
         #account-bar:hover { border-color: var(--gold); color: #fff; }
         
@@ -21,7 +20,6 @@
         .btn-menu { background: #333; color: #eee; border: 1px solid #444; }
         .btn-sync { background: var(--gold); color: #000; font-size: 0.9em; }
         
-        /* 模塊化列表 UI (共用成就樣式) */
         .module-list { max-height: 400px; overflow-y: auto; padding-right: 5px; margin: 15px 0; }
         .module-card { background: #222; border: 1px solid #333; padding: 15px; margin: 8px 0; border-radius: 10px; text-align: left; cursor: pointer; transition: 0.2s; }
         .module-card:hover { border-color: var(--gold); background: #2a2400; }
@@ -41,7 +39,7 @@
         .scene { display: none; }
         .active { display: block; }
         .nav-btn { position: absolute; top: 15px; background: #333; color: var(--gold); padding: 6px 12px; border-radius: 5px; font-size: 0.8em; cursor: pointer; border: 1px solid #444; z-index: 10; }
-        #fx-layer { position: fixed; top: 0; left: 0; width: 100vw; height: height; pointer-events: none; z-index: 100; }
+        #fx-layer { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 100; }
         .flash { animation: flash-anim 0.12s forwards; }
         @keyframes flash-anim { 0% { background: #fff; opacity: 1; } 100% { opacity: 0; } }
         
@@ -56,13 +54,11 @@
 
         #ach-list-container { max-height: 380px; overflow-y: auto; padding-right: 5px; margin: 10px 0; }
         .void-mode { border-color: #ff0000 !important; box-shadow: 0 0 50px rgba(255,0,0,0.6) !important; }
-        .void-text { color: #ff0000 !important; animation: blink 0.5s infinite !important; }
         .ach-card { cursor: pointer; position: relative; transition: 0.2s; }
         .ach-card:hover { transform: scale(1.02); }
         .ach-equipped { border: 2px solid var(--gold) !important; box-shadow: 0 0 10px rgba(255, 204, 0, 0.3); }
         .equip-tag { position: absolute; top: 5px; right: 10px; font-size: 0.7em; color: var(--gold); font-weight: bold; }
 
-        /* 特效樣式保留 */
         .effect-million { color: #ffff00 !important; text-shadow: 0 0 8px #ffff00; }
         .effect-ten-million { color: #ff8c00 !important; text-shadow: 0 0 8px #ff8c00; }
         .effect-hundred-million { color: #00ffff !important; text-shadow: 0 0 8px #00ffff; }
@@ -74,7 +70,7 @@
         @keyframes glow-pulse { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(1.3) drop-shadow(0 0 8px rgba(255,255,255,0.8)); } }
     </style>
 </head>
-<body>
+<body onload="init()">
     <div id="fx-layer"></div>
     <div class="container" id="main-container">
         <div id="nav-group">
@@ -110,12 +106,7 @@
 
                 <div class="module-card" onclick="openInheritMode('normal')">
                     <span class="module-title">2. 帳號繼承 (正式遷移)</span>
-                    <div class="module-info">輸入 UID 與繼承碼，從其他裝置或網域領回完整資產。</div>
-                </div>
-
-                <div class="module-card" onclick="openInheritMode('alpha')">
-                    <span class="module-title">3. 內測繼承 (快速救援)</span>
-                    <div class="module-info">僅需輸入暱稱即可嘗試找回早期內測數據。</div>
+                    <div class="module-info">輸入 UID 與繼承碼，從其他裝置領回完整資產。</div>
                 </div>
             </div>
             <button class="btn-menu" onclick="changeScene('menu-scene')">返回</button>
@@ -176,33 +167,35 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        let consecutiveOneBulletFails = 0;
         let userId = localStorage.getItem('roulette_uid') || 'U' + Math.random().toString(36).substr(2, 7).toUpperCase();
         localStorage.setItem('roulette_uid', userId);
 
+        // 初始化狀態
         window.state = { 
             name: "匿名玩家", 
             legacy_key: Math.random().toString(36).substr(2, 6).toUpperCase(),
-            total: 0, peak: 0, peak_time: 0, games: 0, deaths: 0, shots: 0, wins: 0, 
+            total: 0, peak: 0, peak_time: 0, 
+            deaths: 0, cashout_count: 0,
             achs: new Array(12).fill(0), title_index: -1 
         };
         
         let curBounty = 0;
         let playerHp = 3;
+        let unluckyTrack = 0; // 追蹤棄運之子條件
 
         const ACH_DATA = [
             { title: "初生之犢", icon: "🔰", desc: "完成第一次「止損領錢」。" },
-            { title: "賭徒本色", icon: "🎲", desc: "單命賞金突破 $10,000。" },
+            { title: "賭徒本色", icon: "🎲", desc: "單局賞金突破 $10,000。" },
             { title: "強運的迴響", icon: "🍀", desc: "6 顆子彈下觸發 1% 卡殼成功生存。", secret: true, effect: "effect-lucky" },
             { title: "百萬富翁", icon: "💵", desc: "生涯累積總賞金達 $1,000,000。", effect: "effect-million" },
-            { title: "九死一生", icon: "🕯️", desc: "在裝填 5 顆子彈難度下存活。" },
+            { title: "九死一生", icon: "🕯️", desc: "在裝填 5 顆子彈難度下存活一次。" },
             { title: "見好就收", icon: "💨", desc: "累計成功止損 5 次。" },
             { title: "千萬富翁", icon: "💰", desc: "生涯累積總賞金達 $10,000,000。", effect: "effect-ten-million" },
             { title: "億萬富翁", icon: "💎", desc: "生涯累積總賞金達 $100,000,000。", effect: "effect-hundred-million" },
             { title: "滿載而歸", icon: "😎", desc: "單次收手獲得 10 萬賞金以上。" },
             { title: "超越生死", icon: "🐦‍🔥", desc: "於一滴血狀態觸發 6 彈卡殼。", secret: true, effect: "effect-life-death" },
             { title: "超越極限", icon: "♾️", desc: "在禁忌的 7 彈模式中奇蹟生還。", secret: true, effect: "effect-limit" },
-            { title: "棄運之子", icon: "⚡️", desc: "滿血下裝填 1 彈且連續擊發失敗直到死亡。", secret: true, effect: "effect-unlucky-son" }
+            { title: "棄運之子", icon: "⚡️", desc: "滿血時以 1 彈連抽失敗扣血直至死亡。", secret: true, effect: "effect-unlucky-son" }
         ];
 
         window.init = function() {
@@ -220,7 +213,6 @@
 
         window.saveLocal = function() { localStorage.setItem('roulette_pro_save', JSON.stringify(window.state)); };
 
-        // 帳號功能
         window.rename = function() {
             const n = prompt("輸入新暱稱：", window.state.name);
             if (n) {
@@ -250,15 +242,6 @@
                         applyInherit(data, targetUid);
                     } else alert("驗證失敗：UID 或繼承碼不正確");
                 }, { onlyOnce: true });
-            } else {
-                const name = prompt("請輸入內測時的暱稱：");
-                if (!name) return;
-                onValue(ref(db, 'players'), (snap) => {
-                    const all = snap.val();
-                    let foundUid = Object.keys(all).find(k => all[k].name === name);
-                    if (foundUid) applyInherit(all[foundUid], foundUid);
-                    else alert("找不到該暱稱的存檔");
-                }, { onlyOnce: true });
             }
         };
 
@@ -266,13 +249,13 @@
             window.state.total = data.total || 0;
             window.state.peak = data.peak || 0;
             window.state.name = data.name;
+            window.state.achs = data.achs || window.state.achs;
             window.state.title_index = data.t_idx !== undefined ? data.t_idx : -1;
             saveLocal();
-            // 轉移權限：用新 UID 覆蓋，刪除舊的
             set(ref(db, 'players/' + userId), { ...data, last_sync: Date.now() });
             if(oldUid !== userId) remove(ref(db, 'players/' + oldUid));
             updateUI();
-            alert("繼承成功！數據已同步至此裝置。");
+            alert("繼承成功！數據已同步。");
             changeScene('menu-scene');
         }
 
@@ -284,9 +267,8 @@
             updateUI();
         };
 
-        // 遊戲核心邏輯 (保留原樣)
         window.startGame = function() {
-            playerHp = 3; curBounty = 0; consecutiveOneBulletFails = 0;
+            playerHp = 3; curBounty = 0; unluckyTrack = 0;
             document.getElementById('log').innerHTML = "> 準備好賭上一切了嗎？";
             document.getElementById('bullet-input').value = 1;
             changeScene('game-scene');
@@ -299,11 +281,13 @@
             let survDisplay = document.getElementById('stat-survival');
             let gainDisplay = document.getElementById('stat-gain');
             let container = document.getElementById('main-container');
+            
             if (b === 7 && window.state.achs[2] === 1) {
                 container.classList.add('void-mode');
                 survDisplay.innerText = "???"; gainDisplay.innerText = "???";
                 return;
             } else if (b > 6) { bInput.value = 6; b = 6; }
+            
             container.classList.remove('void-mode');
             let survivalRate = ((6 - b) / 6 * 100).toFixed(1);
             let potentialGain = Math.pow(b, 2) * 250;
@@ -317,6 +301,11 @@
         window.playTurn = function() {
             let b = parseInt(document.getElementById('bullet-input').value);
             flashEffect();
+
+            // 棄運之子判斷起始
+            if (playerHp === 3 && curBounty === 0 && b === 1) unluckyTrack = 1;
+            else if (b !== 1) unluckyTrack = 0; 
+
             if (b === 7) {
                 if (Math.random() < 0.00007) {
                     curBounty += 7777777; window.state.achs[10] = 1;
@@ -324,22 +313,27 @@
                 } else { playerHp = 0; window.state.deaths++; saveLocal(); showResult(false); }
                 updateUI(); return;
             }
+
             let multiplier = (playerHp === 1) ? 2 : 1;
+            
             if (b === 6 && Math.random() < 0.01) {
-                window.state.achs[2] = 1; if (playerHp === 1) window.state.achs[9] = 1;
+                window.state.achs[2] = 1; 
+                if (playerHp === 1) window.state.achs[9] = 1;
                 curBounty += 77777 * multiplier;
                 document.getElementById('log').innerHTML = "<b style='color:#ffcc00'>🎰 奇蹟卡殼！</b>";
             } else if (Math.random() * 6 < b) {
                 playerHp--;
-                if(b===1) consecutiveOneBulletFails++;
+                if (unluckyTrack === 1) unluckyTrack = 1; // 繼續追蹤
                 if (playerHp <= 0) { 
-                    if(consecutiveOneBulletFails >= 3) window.state.achs[11] = 1;
+                    if(unluckyTrack === 1) window.state.achs[11] = 1;
                     window.state.deaths++; saveLocal(); showResult(false); 
                 }
                 else document.getElementById('log').innerHTML = "<b style='color:#ff4444'>💥 擊發失敗！生命 -1</b>";
             } else {
+                unluckyTrack = 0; // 只要成功一次就斷掉棄運之子
                 curBounty += (Math.pow(b, 2) * 250 * multiplier);
                 if (b === 5) window.state.achs[4] = 1;
+                if (curBounty >= 10000) window.state.achs[1] = 1; // 賭徒本色
                 document.getElementById('log').innerText = `> 擊發成功。當前：$${curBounty.toLocaleString()}`;
             }
             updateUI(); updateOdds();
@@ -348,9 +342,19 @@
         window.handleCashOut = function() {
             if (curBounty <= 0) return;
             window.state.total += curBounty;
+            window.state.cashout_count++;
+            
             if (curBounty > window.state.peak) { window.state.peak = curBounty; window.state.peak_time = Date.now(); }
-            window.state.achs[0] = 1;
-            if (window.state.total >= 1000000) window.state.achs[3] = 1;
+            
+            // 成就判定
+            window.state.achs[0] = 1; // 初生之犢
+            if (curBounty >= 10000) window.state.achs[1] = 1; // 賭徒本色
+            if (window.state.total >= 1000000) window.state.achs[3] = 1; // 百萬
+            if (window.state.cashout_count >= 5) window.state.achs[5] = 1; // 見好就收
+            if (window.state.total >= 10000000) window.state.achs[6] = 1; // 千萬
+            if (window.state.total >= 100000000) window.state.achs[7] = 1; // 億萬
+            if (curBounty >= 100000) window.state.achs[8] = 1; // 滿載而歸
+            
             saveLocal(); showResult(true);
         };
 
@@ -359,27 +363,36 @@
             btn.disabled = true; btn.innerText = "🛰️ 同步中...";
             try {
                 await set(ref(db, 'players/' + userId), { 
-                    name: window.state.name, total: window.state.total, peak: window.state.peak, 
-                    l_key: window.state.legacy_key, t_idx: window.state.title_index, peak_time: window.state.peak_time || Date.now()
+                    name: window.state.name, 
+                    total: window.state.total, 
+                    peak: window.state.peak, 
+                    l_key: window.state.legacy_key, 
+                    t_idx: window.state.title_index, 
+                    achs: window.state.achs, // 同步成就清單供排行榜渲染
+                    peak_time: window.state.peak_time || Date.now()
                 });
                 btn.innerText = "✅ 同步成功";
                 setTimeout(() => { btn.innerText = "☁️ 同步數據至雲端"; btn.disabled = false; }, 2000);
             } catch (e) { alert("同步失敗！"); btn.innerText = "❌ 失敗"; btn.disabled = false; }
         };
 
-        // 排行榜與 UI 更新
         function loadLeaderboardListener(field = 'total') {
             const lbRef = query(ref(db, 'players'), orderByChild(field), limitToLast(20));
             onValue(lbRef, (snap) => {
                 const data = snap.val();
                 if (!data) return;
                 const sorted = Object.values(data).sort((a,b) => b[field] - a[field]);
-                document.getElementById('lb-container').innerHTML = sorted.map((p, i) => `
+                document.getElementById('lb-container').innerHTML = sorted.map((p, i) => {
+                    const titleIdx = p.t_idx;
+                    const hasEffect = titleIdx >= 0 && ACH_DATA[titleIdx].effect;
+                    const icon = titleIdx >= 0 ? ACH_DATA[titleIdx].icon : "";
+                    return `
                     <div class="lb-row ${p.name === window.state.name ? 'me' : ''}">
                         <div class="lb-rank">#${i+1}</div>
-                        <div class="lb-name">${p.name}</div>
+                        <div class="lb-name ${hasEffect ? ACH_DATA[titleIdx].effect : ''}">${icon} ${p.name}</div>
                         <div class="lb-val">$${(p[field] || 0).toLocaleString()}</div>
-                    </div>`).join("");
+                    </div>`;
+                }).join("");
             });
         }
 
@@ -394,23 +407,21 @@
             document.getElementById('peak-money').innerText = window.state.peak.toLocaleString();
             document.getElementById('current-bounty').innerText = curBounty.toLocaleString();
             
-            // 帳號資訊同步
-            const statusStr = `使用者：${window.state.name}`;
-            document.getElementById('acc-status').innerText = statusStr;
-            document.getElementById('acc-nick').innerText = window.state.name;
-            document.getElementById('acc-key').innerText = window.state.legacy_key;
-            document.getElementById('acc-uid').innerText = userId;
-
             const nameMain = document.getElementById('acc-status');
+            nameMain.innerText = `使用者：${window.state.name}`;
             nameMain.className = "";
             if (window.state.title_index >= 0 && ACH_DATA[window.state.title_index].effect) {
                 nameMain.classList.add(ACH_DATA[window.state.title_index].effect);
             }
-            document.getElementById('equipped-icon-main').innerText = window.state.title_index>=0?ACH_DATA[window.state.title_index].icon:"";
+            document.getElementById('equipped-icon-main').innerText = window.state.title_index>=0 ? ACH_DATA[window.state.title_index].icon : "";
+            
+            document.getElementById('acc-nick').innerText = window.state.name;
+            document.getElementById('acc-key').innerText = window.state.legacy_key;
+            document.getElementById('acc-uid').innerText = userId;
             document.getElementById('last-life-label').style.display = (playerHp === 1) ? "block" : "none";
         }
 
-        function renderAchievements() {
+        window.renderAchievements = function() {
             const container = document.getElementById('ach-list-container');
             container.innerHTML = ACH_DATA.map((ach, i) => {
                 const unlocked = window.state.achs[i] === 1;
@@ -423,7 +434,7 @@
                              <small style="color:#888">${ach.desc}</small>
                         </div>`;
             }).join("");
-        }
+        };
 
         window.toggleEquip = function(i) {
             if(window.state.achs[i]!==1) return;
@@ -448,8 +459,6 @@
             document.getElementById('result-desc').innerText = win ? `領走 $${curBounty.toLocaleString()}` : "歸零。";
             curBounty = 0;
         }
-
-        init();
     </script>
 </body>
 </html>
