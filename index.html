@@ -198,7 +198,7 @@
             { title: "（已移除）", icon: "❌", desc: "此成就已封印。", hidden: true }, 
             { title: "千萬富翁", icon: "💰", desc: "生涯累積總賞金達 $10,000,000。", effect: "effect-ten-million" },
             { title: "億萬富翁", icon: "💎", desc: "生涯累積總賞金達 $100,000,000。", effect: "effect-hundred-million" },
-            { title: "滿載而歸", icon: "😎", desc: "單次獲得 10 萬賞金以上（領取或開槍瞬間判定）。", effect: "effect-lucky" },
+            { title: "滿載而歸", icon: "😎", desc: "單次「見好就收」領取超過 10 萬賞金。", effect: "effect-lucky" },
             { title: "超越生死", icon: "🐦‍🔥", desc: "於一滴血狀態觸發 6 彈卡殼。", secret: true, effect: "effect-life-death" },
             { title: "超越極限", icon: "♾️", desc: "在禁忌的 7 彈模式中奇蹟生還。", secret: true, effect: "effect-limit" },
             { title: "棄運之子", icon: "⚡️", desc: "滿血時以 1 彈連抽失敗扣血直至死亡。", secret: true, effect: "effect-unlucky-son" }
@@ -284,21 +284,16 @@
             let bInput = document.getElementById('bullet-input');
             let rawVal = bInput.value;
             
-            // 嚴格修復：只能輸入1-7，非法字元強制變1
+            // 手機端優化：oninput 期間不再強制修正非法值，避免無法刪除數字
+            // 只在計算顯示機率時解析數值
             let b = parseInt(rawVal);
-            if (/[^1-7]/.test(rawVal) || isNaN(b)) {
-                b = 1;
-                bInput.value = 1;
-            }
-            if (b > 7) { b = 7; bInput.value = 7; }
-            if (b < 1) { b = 1; bInput.value = 1; }
+            if (isNaN(b)) b = 0; 
 
             let survDisplay = document.getElementById('stat-survival');
             let gainDisplay = document.getElementById('stat-gain');
             let container = document.getElementById('main-container');
             let voidLabel = document.getElementById('void-label');
             
-            // 7顆子彈禁忌效果修復
             if (b === 7 && window.state.achs[2] === 1) {
                 container.classList.add('void-mode');
                 voidLabel.style.display = 'block';
@@ -306,18 +301,35 @@
             } else {
                 container.classList.remove('void-mode');
                 voidLabel.style.display = 'none';
-                let survivalRate = ((6 - b) / 6 * 100).toFixed(1);
-                let potentialGain = Math.pow(b, 2) * 250;
-                if (b === 6) { survivalRate = "1.0"; potentialGain = 77777; }
-                if (playerHp === 1) potentialGain *= 2;
-                survDisplay.innerText = (b===6?"1.0%":survivalRate + "%");
-                gainDisplay.innerText = "+$" + potentialGain.toLocaleString();
+                
+                // 超出 1-6 的範圍顯示為 --
+                if (b < 1 || b > 6) {
+                    survDisplay.innerText = "--";
+                    gainDisplay.innerText = "--";
+                } else {
+                    let survivalRate = ((6 - b) / 6 * 100).toFixed(1);
+                    let potentialGain = Math.pow(b, 2) * 250;
+                    if (b === 6) { survivalRate = "1.0"; potentialGain = 77777; }
+                    if (playerHp === 1) potentialGain *= 2;
+                    survDisplay.innerText = (b===6?"1.0%":survivalRate + "%");
+                    gainDisplay.innerText = "+$" + potentialGain.toLocaleString();
+                }
             }
-            updateHpDisplay();
+            updateHpDisplay(b);
         };
 
         window.playTurn = function() {
-            let b = parseInt(document.getElementById('bullet-input').value);
+            let bInput = document.getElementById('bullet-input');
+            let b = parseInt(bInput.value);
+
+            // 開槍前一刻判定非法裝填
+            if (isNaN(b) || b < 1 || b > 7) {
+                alert("無效的裝填量！請輸入 1-7 之間的數字。");
+                bInput.value = 1;
+                updateOdds();
+                return;
+            }
+
             flashEffect();
 
             if (playerHp === 3 && curBounty === 0 && b === 1) unluckyTrack = 1;
@@ -328,7 +340,6 @@
                     let gain = 7777777;
                     curBounty += gain; 
                     window.state.achs[10] = 1;
-                    checkBountyAch(curBounty); // 判定滿載而歸
                     document.getElementById('log').innerHTML = "<b style='color:#ff0000'>👁️ 祂在看著你。獲得 $7,777,777</b>";
                 } else { 
                     playerHp = 0; 
@@ -347,7 +358,6 @@
                 if (playerHp === 1) window.state.achs[9] = 1;
                 let gain = 77777 * multiplier;
                 curBounty += gain;
-                checkBountyAch(curBounty);
                 document.getElementById('log').innerHTML = "<b style='color:#ffcc00'>🎰 奇蹟卡殼！</b>";
             } else if (Math.random() * 6 < b) {
                 playerHp--;
@@ -361,21 +371,18 @@
                 let gain = (Math.pow(b, 2) * 250 * multiplier);
                 curBounty += gain;
                 if (b === 5) window.state.achs[4] = 1;
-                checkBountyAch(curBounty);
                 document.getElementById('log').innerText = `> 擊發成功。當前：$${curBounty.toLocaleString()}`;
             }
             updateUI(); updateOdds();
         };
 
-        // 滿載而歸判定優化：每次增加賞金時判定，且止損時也判定
-        function checkBountyAch(val) {
-            if (val >= 10000) window.state.achs[1] = 1; // 賭徒本色
-            if (val >= 100000) window.state.achs[8] = 1; // 滿載而歸
-        }
-
         window.handleCashOut = function() {
             if (curBounty <= 0) return;
-            checkBountyAch(curBounty);
+            
+            // 修正：滿載而歸獲取條件 - 收手時單次獲得10萬或以上
+            if (curBounty >= 100000) window.state.achs[8] = 1; 
+            if (curBounty >= 10000) window.state.achs[1] = 1; // 賭徒本色
+
             window.state.total += curBounty;
             window.state.cashout_count++;
             
@@ -455,7 +462,7 @@
         window.renderAchievements = function() {
             const container = document.getElementById('ach-list-container');
             container.innerHTML = ACH_DATA.map((ach, i) => {
-                if (ach.hidden) return ""; // 隱藏已移除成就
+                if (ach.hidden) return ""; 
                 const unlocked = window.state.achs[i] === 1;
                 const equipped = window.state.title_index === i;
                 if (ach.secret && !unlocked) return `<div class="ach-card" style="opacity:0.3; padding:15px; margin:8px; background:#222; border-radius:10px;">🔒 隱藏成就</div>`;
@@ -474,10 +481,9 @@
             saveLocal(); renderAchievements(); updateUI();
         };
 
-        function updateHpDisplay() {
-            let bullets = parseInt(document.getElementById('bullet-input').value);
-            // 7彈模式血條變骷髏
-            if (bullets === 7 && window.state.achs[2] === 1) {
+        function updateHpDisplay(bullets) {
+            let b = bullets || parseInt(document.getElementById('bullet-input').value);
+            if (b === 7 && window.state.achs[2] === 1) {
                 document.getElementById('hp-display').innerText = "💀💀💀";
             } else {
                 document.getElementById('hp-display').innerText = "❤️".repeat(playerHp) + "🖤".repeat(3-playerHp);
