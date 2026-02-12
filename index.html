@@ -1,0 +1,466 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>俄羅斯輪盤 - 雲端競技版</title>
+    <style>
+        :root { --hb-speed: 1.8s; --pulse-color: rgba(255,0,0,0.15); --main-red: #b30000; --gold: #ffcc00; }
+        body { background: #0a0a0a; color: #eee; font-family: 'Segoe UI', sans-serif; text-align: center; padding: 20px; margin: 0; }
+        .container { max-width: 500px; margin: 20px auto; background: #1a1a1a; padding: 30px; border-radius: 15px; border: 2px solid #333; position: relative; box-shadow: 0 0 30px rgba(0,0,0,0.8); z-index: 5; transition: 0.3s; }
+        h1 { color: var(--main-red); letter-spacing: 5px; text-shadow: 2px 2px 5px #000; margin: 30px 0 10px 0; }
+        .bounty-display { font-size: 2.5em; color: var(--gold); font-weight: bold; margin: 20px 0; }
+        #player-tag { font-size: 0.8em; color: #888; margin-bottom: 5px; cursor: pointer; }
+        #player-tag:hover { color: var(--gold); }
+        button { padding: 12px; font-size: 1em; cursor: pointer; border-radius: 8px; border: none; width: 95%; font-weight: bold; margin-top: 10px; transition: 0.2s; }
+        .btn-shoot { background: var(--main-red); color: #fff; border-bottom: 4px solid #600; }
+        .btn-cashout { background: #008000; color: #fff; border-bottom: 4px solid #004000; }
+        .btn-menu { background: #333; color: #eee; border: 1px solid #444; }
+        .btn-sync { background: var(--gold); color: #000; font-size: 0.9em; }
+        .lb-tabs { display: flex; gap: 5px; margin-bottom: 15px; }
+        .tab { flex: 1; padding: 10px; background: #222; font-size: 0.8em; cursor: pointer; border-radius: 5px; border: 1px solid #444; }
+        .tab.active { background: var(--gold); color: #000; border-color: var(--gold); }
+        .lb-list { background: #000; border-radius: 8px; padding: 10px; min-height: 250px; overflow-y: auto; max-height: 400px; }
+        .lb-row { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #222; font-size: 0.9em; align-items: center; }
+        .lb-rank { width: 35px; color: var(--gold); font-weight: bold; text-align: left; }
+        .lb-name { flex: 1; text-align: left; color: #ccc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 5px; }
+        .lb-val { color: #fff; font-family: monospace; font-weight: bold; }
+        .me { background: rgba(255, 204, 0, 0.15) !important; border-radius: 4px; }
+        .scene { display: none; }
+        .active { display: block; }
+        .nav-btn { position: absolute; top: 15px; background: #333; color: var(--gold); padding: 6px 12px; border-radius: 5px; font-size: 0.8em; cursor: pointer; border: 1px solid #444; z-index: 10; }
+        #fx-layer { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 100; }
+        .flash { animation: flash-anim 0.12s forwards; }
+        @keyframes flash-anim { 0% { background: #fff; opacity: 1; } 100% { opacity: 0; } }
+        
+        .odds-panel { background: #000; border: 1px dashed #444; padding: 10px; margin: 15px 0; border-radius: 8px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.85em; }
+        .odds-item { text-align: left; }
+        .odds-label { color: #888; display: block; font-size: 0.8em; }
+        .odds-value { color: #fff; font-weight: bold; }
+
+        #hp-display { font-size: 1.5em; margin-bottom: 10px; color: #ff4444; text-shadow: 0 0 10px rgba(255,0,0,0.5); }
+        .last-life-warn { color: #ff0000; font-size: 0.7em; font-weight: bold; animation: blink 1s infinite; display: none; }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+        #ach-list-container { 
+            max-height: 380px; 
+            overflow-y: auto; 
+            padding-right: 5px;
+            margin: 10px 0;
+            scrollbar-width: thin;
+            scrollbar-color: #444 #111;
+        }
+        #ach-list-container::-webkit-scrollbar { width: 6px; }
+        #ach-list-container::-webkit-scrollbar-track { background: #111; }
+        #ach-list-container::-webkit-scrollbar-thumb { background: #444; border-radius: 3px; }
+        #ach-list-container::-webkit-scrollbar-thumb:hover { background: var(--gold); }
+
+        .void-mode { border-color: #ff0000 !important; box-shadow: 0 0 50px rgba(255,0,0,0.6) !important; }
+        .void-text { color: #ff0000 !important; animation: blink 0.5s infinite !important; }
+
+        .ach-card { cursor: pointer; position: relative; transition: 0.2s; }
+        .ach-card:hover { transform: scale(1.02); }
+        .ach-equipped { border: 2px solid var(--gold) !important; box-shadow: 0 0 10px rgba(255, 204, 0, 0.3); }
+        .equip-tag { position: absolute; top: 5px; right: 10px; font-size: 0.7em; color: var(--gold); font-weight: bold; }
+
+        .effect-million { color: #ffff00 !important; text-shadow: 0 0 8px #ffff00; font-weight: bold; }
+        .effect-ten-million { color: #ff8c00 !important; text-shadow: 0 0 8px #ff8c00; font-weight: bold; }
+        .effect-hundred-million { color: #00ffff !important; text-shadow: 0 0 8px #00ffff; font-weight: bold; }
+        .effect-lucky { color: #00ff00 !important; text-shadow: 0 0 8px #00ff00; font-weight: bold; }
+        .effect-life-death { 
+            background: linear-gradient(90deg, #ff4500, #ff0000); 
+            -webkit-background-clip: text; 
+            -webkit-text-fill-color: transparent; 
+            filter: drop-shadow(0 0 5px rgba(255, 69, 0, 0.8));
+            font-weight: bold;
+        }
+        .effect-limit { 
+            background: linear-gradient(90deg, #1e90ff, #8a2be2); 
+            -webkit-background-clip: text; 
+            -webkit-text-fill-color: transparent; 
+            filter: drop-shadow(0 0 5px rgba(138, 43, 226, 0.8));
+            font-weight: bold;
+        }
+        
+        /* 修改：棄運之子 - 發光彩虹漸變特效 */
+        .effect-unlucky-son {
+            background: linear-gradient(90deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #8b00ff);
+            background-size: 400% 400%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: bold;
+            filter: drop-shadow(0 0 2px rgba(255,255,255,0.5));
+            animation: rainbow-flow 3s linear infinite, glow-pulse 1.5s ease-in-out infinite;
+        }
+        @keyframes rainbow-flow {
+            0% { background-position: 0% 50%; }
+            100% { background-position: 100% 50%; }
+        }
+        @keyframes glow-pulse {
+            0%, 100% { filter: drop-shadow(0 0 2px rgba(255,255,255,0.4)) brightness(1); }
+            50% { filter: drop-shadow(0 0 8px rgba(255,255,255,0.8)) brightness(1.3); }
+        }
+
+    </style>
+</head>
+<body>
+    <div id="fx-layer"></div>
+    <div class="container" id="main-container">
+        <div id="nav-group">
+            <div class="nav-btn" style="left:15px" onclick="changeScene('ach-scene')">🏆 成就</div>
+            <div class="nav-btn" style="right:15px" onclick="changeScene('lb-scene')">🥇 榜單</div>
+        </div>
+        <div id="menu-scene" class="scene active">
+            <h1>RUSSIAN<br>ROULETTE</h1>
+            <div id="player-tag" onclick="rename()">👤 <span id="display-name">匿名玩家</span><span id="equipped-icon-main"></span> (點擊修改)</div>
+            <div style="background: #222; padding: 20px; border-radius: 10px; margin: 20px 0; border-left: 5px solid var(--gold); text-align: left;">
+                <div style="margin-bottom: 12px;"><div style="color: #888; font-size: 0.75em;">TOTAL ASSETS</div><div style="font-size: 1.8em; font-weight: bold; color: var(--gold);">$<span id="total-money">0</span></div></div>
+                <div><div style="color: #888; font-size: 0.75em;">PEAK RECORD</div><div style="font-size: 1.2em; font-weight: bold; color: #eee;">$<span id="peak-money">0</span></div></div>
+            </div>
+            <button class="btn-menu" style="background:var(--main-red); color:#fff;" onclick="startGame()">進入賭局</button>
+            <button class="btn-sync" id="sync-btn" onclick="syncToCloud()">☁️ 同步數據至雲端</button>
+        </div>
+        <div id="game-scene" class="scene">
+            <div id="hp-display">❤️❤️❤️</div>
+            <div id="last-life-label" class="last-life-warn">⚠️ LAST CHANCE: 2X BOUNTY ACTIVE ⚠️</div>
+            <div class="bounty-display">$<span id="current-bounty">0</span></div>
+            <div class="odds-panel" id="odds-box">
+                <div class="odds-item"><span class="odds-label">生存機率</span><span class="odds-value" id="stat-survival">--</span></div>
+                <div class="odds-item"><span class="odds-label">成功收益</span><span class="odds-value" id="stat-gain" style="color: var(--gold);">--</span></div>
+            </div>
+            <div id="log">> 準備好賭上一切了嗎？</div>
+            <div style="margin: 20px 0;">
+                <span style="font-size:0.8em; color:#888;">裝填子彈 (1-6):</span><br>
+                <input type="number" id="bullet-input" min="1" max="7" value="1" oninput="updateOdds()" style="background:#000; color:#fff; border:1px solid #ff4444; padding:10px; width:60px; text-align:center; border-radius:5px; font-size:1.2em; margin-top:5px;">
+            </div>
+            <button class="btn-shoot" id="shoot-btn" onclick="playTurn()">扣下板機</button>
+            <button class="btn-cashout" id="cash-btn" onclick="handleCashOut()">見好就收</button>
+        </div>
+        <div id="lb-scene" class="scene">
+            <h2>LEADERBOARD</h2>
+            <div class="lb-tabs"><div id="tab-total" class="tab active" onclick="switchLB('total')">財富總榜</div><div id="tab-peak" class="tab" onclick="switchLB('peak')">巔峰單局</div></div>
+            <div class="lb-list" id="lb-container">載入中...</div>
+            <button class="btn-menu" onclick="changeScene('menu-scene')">返回</button>
+        </div>
+        <div id="ach-scene" class="scene">
+            <h2>ACHIEVEMENTS</h2>
+            <p style="font-size: 0.7em; color: #888; margin-top: -10px;">點擊已獲得成就來配戴稱號</p>
+            <div id="ach-list-container"></div>
+            <button class="btn-menu" onclick="changeScene('menu-scene')">返回</button>
+        </div>
+        <div id="result-scene" class="scene">
+            <h2 id="result-title"></h2>
+            <div id="result-desc" style="margin: 20px 0; line-height:1.6;"></div>
+            <button class="btn-menu" onclick="changeScene('menu-scene')">回選單</button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, set, onValue, query, orderByChild, limitToLast } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBH75KFH3Qp6A3hLbA--cOq-S9R-uE68Us",
+            authDomain: "test123-4d385.firebaseapp.com",
+            databaseURL: "https://test123-4d385-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "test123-4d385",
+            storageBucket: "test123-4d385.firebasestorage.app",
+            messagingSenderId: "958147628261",
+            appId: "1:958147628261:web:07de2a319eab92b92b980c",
+            measurementId: "G-X19BVWZWVW"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        let consecutiveOneBulletFails = 0;
+
+        window.state = { 
+            name: "匿名玩家", 
+            total: 0, 
+            peak: 0, 
+            peak_time: 0, 
+            games: 0, 
+            deaths: 0, 
+            shots: 0, 
+            wins: 0, 
+            achs: new Array(12).fill(0),
+            title_index: -1 
+        };
+        
+        let curBounty = 0;
+        let playerHp = 3;
+        let userId = localStorage.getItem('roulette_uid') || 'U' + Math.random().toString(36).substr(2, 5);
+        localStorage.setItem('roulette_uid', userId);
+
+        const ACH_DATA = [
+            { title: "初生之犢", icon: "🔰", desc: "完成第一次「止損領錢」。" },
+            { title: "賭徒本色", icon: "🎲", desc: "單命賞金突破 $10,000。" },
+            { title: "強運的迴響", icon: "🍀", desc: "6 顆子彈下觸發 1% 卡殼成功生存。", secret: true, effect: "effect-lucky" },
+            { title: "百萬富翁", icon: "💵", desc: "生涯累積總賞金達 $1,000,000。", effect: "effect-million" },
+            { title: "九死一生", icon: "🕯️", desc: "在裝填 5 顆子彈難度下存活。" },
+            { title: "見好就收", icon: "💨", desc: "累計成功止損 5 次。" },
+            { title: "千萬富翁", icon: "💰", desc: "生涯累積總賞金達 $10,000,000。", effect: "effect-ten-million" },
+            { title: "億萬富翁", icon: "💎", desc: "生涯累積總賞金達 $100,000,000。", effect: "effect-hundred-million" },
+            { title: "滿載而歸", icon: "😎", desc: "單次收手獲得 10 萬賞金以上。" },
+            { title: "超越生死", icon: "🐦‍🔥", desc: "於一滴血狀態觸發 6 彈卡殼。", secret: true, effect: "effect-life-death" },
+            { title: "超越極限", icon: "♾️", desc: "在禁忌的 7 彈模式中奇蹟生還。", secret: true, effect: "effect-limit" },
+            { title: "棄運之子", icon: "⚡️", desc: "滿血下裝填 1 彈且連續擊發失敗直到死亡。", secret: true, effect: "effect-unlucky-son" }
+        ];
+
+        window.init = function() {
+            const saved = localStorage.getItem('roulette_pro_save');
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                while(parsed.achs.length < ACH_DATA.length) parsed.achs.push(0);
+                if (parsed.title_index === undefined) parsed.title_index = -1;
+                window.state = parsed;
+            }
+            updateUI();
+            updateOdds();
+            loadLeaderboardListener();
+        };
+
+        window.saveLocal = function() { localStorage.setItem('roulette_pro_save', JSON.stringify(window.state)); };
+
+        window.rename = function() {
+            const n = prompt("請輸入你的暱稱 (限16字, 不含表情)：", window.state.name);
+            if (n !== null) {
+                const cleanName = n.replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]|\u200D|\uFE0F/g, '').trim();
+                if (cleanName.length > 0) {
+                    window.state.name = cleanName.substring(0, 16);
+                    saveLocal();
+                    updateUI();
+                } else {
+                    alert("暱稱無效！");
+                }
+            }
+        };
+
+        window.toggleEquip = function(index) {
+            if (window.state.achs[index] !== 1) return;
+            window.state.title_index = (window.state.title_index === index) ? -1 : index;
+            saveLocal();
+            renderAchievements();
+            updateUI();
+        };
+
+        window.changeScene = function(sId) {
+            document.querySelectorAll('.scene').forEach(s => s.classList.remove('active'));
+            document.getElementById(sId).classList.add('active');
+            document.getElementById('nav-group').style.display = (sId === 'menu-scene') ? 'block' : 'none';
+            if (sId === 'ach-scene') renderAchievements();
+            updateUI();
+            if (sId === 'game-scene') updateOdds();
+        };
+
+        window.startGame = function() {
+            playerHp = 3; curBounty = 0; consecutiveOneBulletFails = 0;
+            const logEl = document.getElementById('log');
+            if (logEl) logEl.innerHTML = "> 準備好賭上一切了嗎？";
+            document.getElementById('bullet-input').value = 1;
+            changeScene('game-scene');
+            updateUI();
+            updateOdds();
+        };
+
+        window.updateOdds = function() {
+            let bInput = document.getElementById('bullet-input');
+            let b = parseInt(bInput.value);
+            let survDisplay = document.getElementById('stat-survival');
+            let gainDisplay = document.getElementById('stat-gain');
+            let container = document.getElementById('main-container');
+            let hpDisplay = document.getElementById('hp-display');
+            let logEl = document.getElementById('log');
+
+            if (b === 7 && window.state.achs[2] === 1) {
+                container.classList.add('void-mode');
+                survDisplay.innerText = "???";
+                gainDisplay.innerText = "???";
+                gainDisplay.style.color = "#ff0000";
+                hpDisplay.innerText = "💀💀💀";
+                logEl.innerHTML = "<span class='void-text'>這不是你該來的地方......</span>";
+                return;
+            } else if (b > 6) { bInput.value = 6; b = 6; }
+
+            container.classList.remove('void-mode');
+            gainDisplay.style.color = "var(--gold)";
+            if (logEl.innerHTML.includes('void-text')) {
+                logEl.innerText = curBounty > 0 ? `> 當前累積：$${curBounty.toLocaleString()}` : "> 準備好賭上一切了嗎？";
+            }
+
+            let survivalRate = ((6 - b) / 6 * 100).toFixed(1);
+            let potentialGain = Math.pow(b, 2) * 250;
+            if (b === 6) { survivalRate = "1.0"; potentialGain = 77777; }
+            if (playerHp === 1) potentialGain *= 2;
+
+            survDisplay.innerText = survivalRate + "%";
+            gainDisplay.innerText = "+$" + potentialGain.toLocaleString();
+            updateHpDisplay();
+        };
+
+        window.playTurn = function() {
+            let bInput = document.getElementById('bullet-input');
+            let b = parseInt(bInput.value);
+            
+            if (b === 7) {
+                if (window.state.achs[2] !== 1) { alert("尚未解鎖此難度"); bInput.value = 1; updateOdds(); return; }
+                window.state.shots++; flashEffect();
+                if (Math.random() < 0.00007) {
+                    curBounty += 7777777; window.state.achs[10] = 1;
+                    document.getElementById('log').innerHTML = "<b style='color:#ff0000'>👁️ 祂在看著你。獲得 $7,777,777</b>";
+                } else {
+                    playerHp = 0; window.state.deaths++; saveLocal(); showResult(false);
+                }
+                updateUI(); return;
+            }
+
+            if (isNaN(b) || b < 1 || b > 6) { alert("🚨 非法裝填！"); return; }
+            window.state.shots++; flashEffect();
+            let multiplier = (playerHp === 1) ? 2 : 1;
+
+            if (b === 6 && Math.random() < 0.01) { 
+                window.state.achs[2] = 1; 
+                if (playerHp === 1) window.state.achs[9] = 1;
+                let prize = 77777 * multiplier;
+                curBounty += prize;
+                document.getElementById('log').innerHTML = `<b style='color:#ffcc00'>🎰 奇蹟卡殼！獲得 $${prize.toLocaleString()}</b>`;
+                consecutiveOneBulletFails = 0; 
+            } else if (Math.random() * 6 < b) {
+                playerHp--;
+                if (b === 1) { consecutiveOneBulletFails++; } else { consecutiveOneBulletFails = 0; }
+                if (playerHp > 0) {
+                    document.getElementById('log').innerHTML = `<b style='color:#ff4444'>💥 擊發失敗！失去 1 點生命！(賞金保留)</b>`;
+                } else {
+                    if (consecutiveOneBulletFails === 3) { window.state.achs[11] = 1; }
+                    window.state.deaths++; saveLocal(); showResult(false);
+                }
+            } else {
+                consecutiveOneBulletFails = 0;
+                if (b === 5) window.state.achs[4] = 1;
+                curBounty += (Math.pow(b, 2) * 250 * multiplier);
+                if (curBounty >= 10000) window.state.achs[1] = 1;
+                document.getElementById('log').innerText = `> 擊發成功。當前累積：$${curBounty.toLocaleString()}`;
+            }
+            updateUI(); updateOdds();
+        };
+
+        window.handleCashOut = function() {
+            if (curBounty <= 0) return;
+            if (curBounty >= 100000) window.state.achs[8] = 1;
+            window.state.total += curBounty; window.state.wins++;
+            if (curBounty > window.state.peak) { window.state.peak = curBounty; window.state.peak_time = Date.now(); }
+            window.state.achs[0] = 1; 
+            if (window.state.total >= 1000000) window.state.achs[3] = 1;
+            if (window.state.total >= 10000000) window.state.achs[6] = 1;
+            if (window.state.total >= 100000000) window.state.achs[7] = 1;
+            if (window.state.wins >= 5) window.state.achs[5] = 1;
+            saveLocal(); showResult(true);
+        };
+
+        window.syncToCloud = async function() {
+            const btn = document.getElementById('sync-btn');
+            btn.disabled = true; btn.innerText = "🛰️ 同步中...";
+            try {
+                await set(ref(db, 'players/' + userId), { 
+                    name: window.state.name, 
+                    total: window.state.total, 
+                    peak: window.state.peak, 
+                    peak_time: window.state.peak_time || Date.now(),
+                    t_idx: window.state.title_index
+                });
+                btn.innerText = "✅ 同步成功";
+                setTimeout(() => { btn.innerText = "☁️ 同步數據至雲端"; btn.disabled = false; }, 2000);
+            } catch (e) { alert("同步失敗！"); btn.innerText = "❌ 失敗"; btn.disabled = false; }
+        };
+
+        window.switchLB = function(type) {
+            document.getElementById('tab-total').classList.toggle('active', type === 'total');
+            document.getElementById('tab-peak').classList.toggle('active', type === 'peak');
+            loadLeaderboardListener(type);
+        };
+
+        function loadLeaderboardListener(field = 'total') {
+            const lbRef = query(ref(db, 'players'), orderByChild(field), limitToLast(20));
+            onValue(lbRef, (snapshot) => {
+                const data = snapshot.val();
+                const container = document.getElementById('lb-container');
+                if (!data) { container.innerText = "尚與世隔絕"; return; }
+                const sorted = Object.values(data).sort((a, b) => {
+                    if (b[field] !== a[field]) return b[field] - a[field];
+                    return (a.peak_time || 0) - (b.peak_time || 0);
+                });
+                container.innerHTML = sorted.map((p, i) => {
+                    const icon = (p.t_idx !== undefined && p.t_idx >= 0) ? ACH_DATA[p.t_idx].icon : "";
+                    const effectClass = (p.t_idx !== undefined && p.t_idx >= 0) ? (ACH_DATA[p.t_idx].effect || "") : "";
+                    return `
+                    <div class="lb-row ${p.name === window.state.name ? 'me' : ''}">
+                        <div class="lb-rank">#${i+1}</div>
+                        <div class="lb-name ${effectClass}">${p.name}${icon}</div>
+                        <div class="lb-val">$${(p[field] || 0).toLocaleString()}</div>
+                    </div>`;
+                }).join("");
+            });
+        }
+
+        function flashEffect() {
+            const fx = document.getElementById('fx-layer');
+            fx.classList.remove('flash'); void fx.offsetWidth; fx.classList.add('flash');
+        }
+
+        function updateHpDisplay() {
+            let hpHearts = "";
+            for(let i=0; i<3; i++) hpHearts += (i < playerHp) ? "❤️" : "🖤";
+            document.getElementById('hp-display').innerText = hpHearts;
+        }
+
+        function updateUI() {
+            document.getElementById('total-money').innerText = window.state.total.toLocaleString();
+            document.getElementById('peak-money').innerText = window.state.peak.toLocaleString();
+            document.getElementById('current-bounty').innerText = curBounty.toLocaleString();
+            
+            const nameEl = document.getElementById('display-name');
+            nameEl.innerText = window.state.name;
+            nameEl.className = "";
+            if (window.state.title_index >= 0 && ACH_DATA[window.state.title_index].effect) {
+                nameEl.classList.add(ACH_DATA[window.state.title_index].effect);
+            }
+
+            const iconMain = (window.state.title_index >= 0) ? ACH_DATA[window.state.title_index].icon : "";
+            document.getElementById('equipped-icon-main').innerText = iconMain;
+            if (parseInt(document.getElementById('bullet-input').value) !== 7) updateHpDisplay();
+            document.getElementById('last-life-label').style.display = (playerHp === 1) ? "block" : "none";
+        }
+
+        function renderAchievements() {
+            const container = document.getElementById('ach-list-container');
+            container.innerHTML = ACH_DATA.map((ach, i) => {
+                const unlocked = window.state.achs[i] === 1;
+                const equipped = window.state.title_index === i;
+                if (ach.secret && !unlocked) return `<div style="background:#222; padding:15px; margin:8px; border-radius:10px; color:#444; border:1px solid #333">隱藏成就<br><small>???</small></div>`;
+                
+                const effectClass = ach.effect || "";
+                return `<div class="ach-card ${equipped ? 'ach-equipped' : ''}" 
+                             onclick="toggleEquip(${i})"
+                             style="background:${unlocked?'#2a2400':'#222'}; border:1px solid ${unlocked?'#555':'#333'}; padding:15px; margin:8px; border-radius:10px; text-align:left;">
+                            ${equipped ? '<span class="equip-tag">已配戴</span>' : ''}
+                            <b class="${unlocked ? effectClass : ''}" style="color:${unlocked && !effectClass ? 'var(--gold)' : (unlocked ? '' : '#888')}">${ach.title} ${ach.icon}</b><br>
+                            <small style="color:${unlocked?'#ccc':'#666'}">${ach.desc}</small>
+                        </div>`;
+            }).join("");
+        }
+
+        function showResult(win) {
+            changeScene('result-scene');
+            const title = document.getElementById('result-title');
+            title.innerText = win ? "止損成功" : "命運終結";
+            title.style.color = win ? "#0f0" : "#f00";
+            document.getElementById('result-desc').innerText = win ? `領走 $${curBounty.toLocaleString()}。` : "你失去了所有生命，獎金灰飛煙滅。";
+            curBounty = 0;
+        }
+
+        init();
+    </script>
+</body>
+</html>
