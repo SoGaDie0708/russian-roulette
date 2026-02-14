@@ -70,7 +70,32 @@
         .effect-hundred-million { color: #00ffff !important; text-shadow: 0 0 8px #00ffff; }
         .effect-lucky { color: #00ff00 !important; text-shadow: 0 0 8px #00ff00; }
         .effect-life-death { background: linear-gradient(90deg, #ff4500, #ff0000); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 0 5px rgba(255, 69, 0, 0.8)); }
-        .effect-limit { background: linear-gradient(90deg, #1e90ff, #8a2be2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 0 5px rgba(138, 43, 226, 0.8)); }
+        
+        /* --- 局部修改：超越極限稱號特效 --- */
+        .effect-limit { 
+            background: linear-gradient(135deg, #1e90ff, #8a2be2, #00ffff, #1e90ff); 
+            background-size: 300% 300%;
+            -webkit-background-clip: text; 
+            -webkit-text-fill-color: transparent; 
+            filter: drop-shadow(0 0 8px rgba(138, 43, 226, 0.9));
+            animation: limit-flow 3s linear infinite, limit-particle 1.5s ease-in-out infinite alternate;
+        }
+
+        /* 漸變流動動畫 */
+        @keyframes limit-flow {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* 模擬粒子閃爍與呼吸感 */
+        @keyframes limit-particle {
+            0% { filter: drop-shadow(0 0 5px rgba(30, 144, 255, 0.6)) brightness(1); }
+            50% { filter: drop-shadow(0 0 15px rgba(0, 255, 255, 1)) brightness(1.4); }
+            100% { filter: drop-shadow(0 0 8px rgba(138, 43, 226, 0.8)) brightness(1.1); }
+        }
+        /* ------------------------------- */
+
         .effect-unlucky-son { background: linear-gradient(90deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #8b00ff); background-size: 400% 400%; -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: rainbow-flow 3s linear infinite, glow-pulse 1.5s ease-in-out infinite; }
         @keyframes rainbow-flow { 0% { background-position: 0% 50%; } 100% { background-position: 100% 50%; } }
         @keyframes glow-pulse { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(1.3) drop-shadow(0 0 8px rgba(255,255,255,0.8)); } }
