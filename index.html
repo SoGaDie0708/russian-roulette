@@ -227,28 +227,41 @@
             }
         };
 
-        window.editLegacyKey = function() {
-            const k = prompt("設定繼承碼 (僅限英數)：", window.state.legacy_key);
-            if (k) {
-                const clean = k.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
-                if(clean.length >= 4) { window.state.legacy_key = clean; saveLocal(); updateUI(); }
-                else alert("繼承碼太短(至少4位)");
-            }
-        };
-
         window.openInheritMode = function(type) {
-            if (type === 'normal') {
-                const targetUid = prompt("請輸入舊帳號的 UID：");
-                const targetKey = prompt("請輸入該帳號的 繼承碼：");
-                if (!targetUid || !targetKey) return;
-                onValue(ref(db, 'players/' + targetUid), (snap) => {
-                    const data = snap.val();
-                    if (data && data.l_key === targetKey) {
-                        applyInherit(data, targetUid);
-                    } else alert("驗證失敗：UID 或繼承碼不正確");
-                }, { onlyOnce: true });
+    if (type === 'normal') {
+        const targetNick = prompt("【救援模式】請輸入您的舊暱稱：");
+        const targetKey = prompt("【救援模式】請輸入您的繼承碼：");
+        
+        if (!targetNick || !targetKey) return;
+
+        console.log("正在雲端搜尋玩家...");
+        // 取得所有玩家資料進行比對
+        onValue(ref(db, 'players'), (snap) => {
+            const allData = snap.val();
+            let foundUid = null;
+            let foundData = null;
+
+            if (allData) {
+                for (let uid in allData) {
+                    // 同時比對 暱稱 與 繼承碼
+                    if (allData[uid].name === targetNick && allData[uid].l_key === targetKey) {
+                        foundUid = uid;
+                        foundData = allData[uid];
+                        break;
+                    }
+                }
             }
-        };
+
+            if (foundUid && foundData) {
+                if(confirm(`成功找到玩家！\nUID: ${foundUid}\n資產: $${foundData.total.toLocaleString()}\n確定要找回此帳號嗎？`)) {
+                    applyInherit(foundData, foundUid);
+                }
+            } else {
+                alert("驗證失敗：找不到符合該暱稱與繼承碼的帳號。");
+            }
+        }, { onlyOnce: true });
+    }
+};
 
         function applyInherit(data, oldUid) {
             window.state.total = data.total || 0;
